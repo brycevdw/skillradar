@@ -1,0 +1,169 @@
+# SkillRadar - Project Documentatie
+
+SkillRadar is een MVC-gestructureerd, object-georiënteerd PHP-project waarmee studenten anoniem het groepsproces kunnen beoordelen. Docenten kunnen de resultaten overzichtelijk bekijken met radar charts en de groepssamenstelling beter beheren. Het systeem is bedoeld voor multidisciplinaire samenwerking tussen studenten van Gilde Opleidingen en Hogeschool Fontys.
+
+**Doel van het project:**  
+- Studenten kunnen anoniem feedback geven over de samenwerking binnen projectgroepen.  
+- Docenten kunnen vragenlijsten aanmaken, groepen beheren en resultaten visueel analyseren.  
+- Het systeem ondersteunt hergebruik voor verschillende projectgroepen en retrospectives.
+
+**Techstack & tools:**  
+- PHP 8+ (OOP, MVC)  
+- MySQL voor database  
+- HTML5, CSS3, Vanilla JS  
+- Chart.js voor radar charts  
+- Composer voor dependency management  
+- Optioneel: AJAX voor dynamische updates/animaties  
+
+---
+
+## Projectstructuur
+
+app
+ controllers
+  AdminController.php
+  AuthController.php
+  GroupController.php
+  QuestionnaireController.php
+  SubmissionController.php
+  DashboardController.php
+  ErrorController.php
+  api
+   GroupApiController.php
+   QuestionnaireApiController.php
+   SubmissionApiController.php
+   ResultsApiController.php
+ models
+  Group.php
+  Questionnaire.php
+  Skill.php
+  Question.php
+  Submission.php
+ services
+  AggregationService.php
+  QuestionnaireService.php
+  ExportService.php
+ views
+  admin
+   groupView.php
+   questionnaireView.php
+  student
+   submissionView.php
+  dashboard
+   resultsView.php
+  shared
+   layout.php
+   navbar.php
+  errorView.php
+ core
+  Router.php
+  Controller.php
+  Model.php
+  Database.php
+  Renderer.php
+ helpers
+  urlHelper.php
+  uuidHelper.php
+  csrfHelper.php
+public
+ assets
+  css
+   style.css
+  js
+   ajax.js
+   chart-init.js
+  img
+ index.php
+ api.php
+routes
+ web.php
+config
+ config.php
+ database.php
+migrations
+seeds
+tests
+vendor
+.env
+.env-default
+.htaccess
+composer.json
+composer.lock
+README.md
+
+---
+
+## Plan van aanpak (To-do lijst per fase)
+
+### Fase 1: Voorbereiding & Architectuur
+- [ ] Duidelijke requirements opstellen (student invullen, radar chart, admin tools)  
+- [ ] Datamodel / ERD maken: Groups, Questionnaires, Skills, Questions, Submissions  
+- [ ] UI-flow schetsen voor studenten en docenten (wireframes)  
+- [ ] Projectstructuur opzetten (MVC, services, API, views)  
+- [ ] Composer installeren en libraries toevoegen (vlucas/phpdotenv, Chart.js)  
+- [ ] .env configureren (database, base URL)
+
+### Fase 2: Database & Backend Setup
+- [ ] Migraties maken voor alle tabellen  
+- [ ] Seed-data toevoegen (voorbeeldvragenlijsten, skills, testgroepen)  
+- [ ] Database class bouwen (PDO wrapper)  
+- [ ] Basis Model class bouwen (CRUD)  
+
+### Fase 3: Controllers & Services
+- [ ] Admin controllers: groepen en vragenlijsten beheren  
+- [ ] Student controller: formulier tonen & submission verwerken  
+- [ ] Dashboard controller: radar chart weergave  
+- [ ] API controllers: JSON endpoints voor AJAX / Chart.js  
+- [ ] Services:  
+  - AggregationService (berekeningen gemiddeldes / per-student)  
+  - QuestionnaireService (validatie & skill mapping)  
+  - ExportService (PNG / CSV export)  
+
+### Fase 4: Views & Frontend
+- [ ] Layout (shared/layout.php) en navigatie (navbar.php)  
+- [ ] Admin views: groepen & vragenlijsten beheren  
+- [ ] Student views: formulier invullen (sliders / radio buttons)  
+- [ ] Dashboard views: radar charts tonen (Chart.js)  
+- [ ] Optionele animaties / AJAX voor dynamische updates  
+- [ ] UI responsive maken voor mobiel  
+
+### Fase 5: Auth & Security
+- [ ] Docenten/admin login systeem (AuthController)  
+- [ ] CSRF tokens op admin/forms  
+- [ ] Server-side validatie van student submissions  
+- [ ] Anonimiteit garanderen (geen user-id of IP opslaan)  
+
+### Fase 6: Routing & Environment
+- [ ] Alle webroutes definiëren in routes/web.php  
+- [ ] API-routes voor JSON endpoints  
+- [ ] .env variabelen laden in bootstrap.php of index.php  
+
+### Fase 7: Testing
+- [ ] Unit tests voor AggregationService en services  
+- [ ] Student submissions testen (individueel + anoniem)  
+- [ ] Radar chart aggregatie testen (per-student / gemiddeld)  
+- [ ] Admin CRUD testen (groepen, vragenlijsten, skills)  
+- [ ] Edge cases controleren (lege groepen, ontbrekende vragen, max/min scores)  
+
+### Fase 8: Extra Features / Polish
+- [ ] Radar chart export naar PNG/CSV  
+- [ ] Herbruikbaarheid voor meerdere projectgroepen  
+- [ ] Feedbackmeldingen bij submit (AJAX of normale submit)  
+- [ ] Optionele mailnotificaties voor studenten (PHPMailer)  
+- [ ] UI/UX verbeteren: tooltips, validatie, animaties  
+
+### Fase 9: Documentatie
+- [ ] README.md up-to-date houden  
+- [ ] /docs/: ERD, API endpoints, uitleg AggregationService, installatie, deployment  
+- [ ] Inline PHPDoc toevoegen in controllers, models, services  
+- [ ] CONTRIBUTING.md & CHANGELOG.md  
+
+---
+
+## MVP (Minimum Viable Product)
+- Groep aanmaken en beheren  
+- Vragenlijst aanmaken en koppelen aan groep  
+- Studenten kunnen formulier invullen  
+- Radar chart tonen (anoniem, gemiddeld per groep)  
+
+**Tip:** Begin met de MVP, breid daarna uit met admin features, export, per-student weergave en polish.
