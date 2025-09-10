@@ -173,4 +173,4 @@ By using this Software, you acknowledge that you have read, understood, and agre
 
 -------------------------------------------------------------------------------
 
-Happy coding — want me to generate the minimal working file set (controllers, models, views, migration + seed) next? Reply with generate files and I will produce the PHP files.
+Happy coding
