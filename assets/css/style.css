@@ -1104,3 +1104,168 @@ body, html {
     font-size: 0.95em;
 }
 
+/* ------------------- DASHBOARD PAGE ------------------- */
+body.dashboard-page {
+    background: linear-gradient(135deg, #1a73e8, #4fc3f7);
+    font-family: 'Inter', sans-serif;
+    color: #fff;
+    overflow: hidden; /* voorkomt scrollen */
+}
+
+.dashboard-hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    position: relative;
+    padding-top: 3em; /* naar boven verplaatst */
+}
+
+.dashboard-container {
+    max-width: 1150px;
+    width: 100%;
+    text-align: center;
+    z-index: 2;
+}
+
+/* Titel */
+.dashboard-header {
+    margin-bottom: 2.2em;
+}
+
+.dashboard-header h1 {
+    font-size: 2.6em;
+    font-weight: 700;
+    margin-bottom: 0.3em;
+}
+
+.dashboard-header p {
+    font-size: 1.1em;
+    color: #e3f2fd;
+}
+
+/* Grid layout */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 2em;
+    justify-content: center;
+    margin-top: 1em;
+}
+
+/* Cards */
+.dashboard-card {
+    background: #fff;
+    color: #333;
+    border-radius: 20px;
+    padding: 2.3em 2em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.07);
+    transition: all 0.3s ease;
+    border-top: 5px solid transparent;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-6px);
+    border-top: 5px solid #1a73e8;
+    box-shadow: 0 15px 35px rgba(26, 115, 232, 0.25);
+}
+
+/* Icon Circle */
+.icon-circle {
+    width: 75px;
+    height: 75px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1a73e8, #4fc3f7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    margin-bottom: 1em;
+    transition: transform 0.4s ease;
+    box-shadow: 0 5px 15px rgba(26,115,232,0.3);
+}
+
+.icon-circle img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    filter: brightness(0) invert(1); /* wit maken */
+}
+
+.dashboard-card:hover .icon-circle {
+    transform: scale(1.07);
+}
+
+/* Tekst */
+.dashboard-card h3 {
+    font-size: 1.25em;
+    font-weight: 700;
+    color: #1a73e8;
+    margin-bottom: 0.5em;
+}
+
+.dashboard-card p {
+    font-size: 0.98em;
+    color: #555;
+    margin-bottom: 1.8em;
+    line-height: 1.6;
+}
+
+/* Buttons */
+.dashboard-card .btn-primary {
+    background-color: #1a73e8;
+    color: #fff;
+    padding: 0.8em 1.6em;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.dashboard-card .btn-primary:hover {
+    background-color: #155fc1;
+    box-shadow: 0 0 15px rgba(21, 95, 193, 0.4);
+}
+
+/* Floating shapes */
+.floating-shape {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.1;
+    animation: float 8s ease-in-out infinite;
+}
+
+.shape1 {
+    width: 140px;
+    height: 140px;
+    background: #fff;
+    top: 10%;
+    left: 8%;
+}
+
+.shape2 {
+    width: 160px;
+    height: 160px;
+    background: #ffeb3b;
+    bottom: 10%;
+    right: 12%;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .dashboard-header h1 {
+        font-size: 2em;
+    }
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}

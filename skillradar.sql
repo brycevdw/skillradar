@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Gegenereerd op: 20 okt 2025 om 10:04
+-- Gegenereerd op: 20 okt 2025 om 12:34
 -- Serverversie: 10.4.28-MariaDB
 -- PHP-versie: 8.2.4
 
@@ -107,7 +107,8 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `email`, `password`, `role`, `created_at`) VALUES
-(1, 'Rayan Addarrazi', 'rayan.addarrazi@student.gildeopleidingen.nl', '$2y$10$2OM7QdQzZ3p1BKdpkyb95OFfSDrBP8e.6doNcuwP1uXf3HznReylG', 'teacher', '2025-10-20 07:50:13');
+(1, 'Rayan Addarrazi', 'rayan.addarrazi@student.gildeopleidingen.nl', '$2y$10$2OM7QdQzZ3p1BKdpkyb95OFfSDrBP8e.6doNcuwP1uXf3HznReylG', 'teacher', '2025-10-20 07:50:13'),
+(2, 'Malik Beukenhout', 'malik.beukenhout@student.gildeopleidingen.nl', '$2y$10$1mmYjwZz5yg73DiBt0EujOSm.NhLkeiPLxhDRYzOGtNiUGSI7yXfS', 'student', '2025-10-20 08:06:53');
 
 --
 -- Indexen voor geëxporteerde tabellen
@@ -195,7 +196,7 @@ ALTER TABLE `surveys`
 -- AUTO_INCREMENT voor een tabel `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- Beperkingen voor geëxporteerde tabellen
