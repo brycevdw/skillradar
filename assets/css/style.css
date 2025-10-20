@@ -1,3 +1,52 @@
+/* Survey Table Styling */
+.survey-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 2em 0;
+    background: #fff;
+    border-radius: 15px;
+    box-shadow: 0 8px 24px rgba(26,115,232,0.07);
+    overflow: hidden;
+}
+.survey-table th, .survey-table td {
+    padding: 1em 1.2em;
+    text-align: left;
+}
+.survey-table th {
+    background: #e6f0ff;
+    color: #1a73e8;
+    font-weight: 700;
+    font-size: 1.05em;
+    border-bottom: 2px solid #cbe1ff;
+}
+.survey-table tr:not(:last-child) td {
+    border-bottom: 1px solid #f0f7ff;
+}
+.survey-table td {
+    color: #333;
+    font-size: 1em;
+}
+.survey-table a.btn {
+    background: #1a73e8;
+    color: #fff;
+    padding: 0.5em 1.2em;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background 0.2s;
+    font-size: 0.98em;
+}
+.survey-table a.btn:hover {
+    background: #155fc1;
+}
+.container {
+    max-width: 900px;
+    margin: 2em auto;
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 8px 24px rgba(26,115,232,0.07);
+    padding: 2.5em 2em;
+}
 /* General Styles */
 body {
     margin: 0;
