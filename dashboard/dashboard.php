@@ -53,20 +53,20 @@ if (!$isTeacher && !$isStudent) {
 
                     <div class="dashboard-card">
                         <div class="icon-circle">
-                            <img src="https://cdn-icons-png.flaticon.com/512/2910/2910769.png" alt="Teams & groepen" />
+                            <img src="https://cdn-icons-png.flaticon.com/512/2910/2910769.png" alt="Groepen aanmaken" />
                         </div>
-                        <h3>Teams & groepen</h3>
-                        <p>Maak en beheer projectgroepen en deelnames.</p>
-                        <a href="/Skillradar/dashboard/settings.php" class="btn-primary">Beheer groepen</a>
+                        <h3>Groepen aanmaken</h3>
+                        <p>Maak nieuwe groepen aan en beheer je teams.</p>
+                        <a href="/Skillradar/survey/groups.php" class="btn-primary">Maak groep</a>
                     </div>
 
                     <div class="dashboard-card">
                         <div class="icon-circle">
-                            <img src="https://cdn-icons-png.flaticon.com/512/2910/2910741.png" alt="Uitnodigingen" />
+                            <img src="https://cdn-icons-png.flaticon.com/512/2910/2910763.png" alt="Bekijk alle vragenlijsten" />
                         </div>
-                        <h3>Uitnodigingen</h3>
-                        <p>Verstuur uitnodigingen en herinneringen naar studenten.</p>
-                        <a href="/Skillradar/dashboard/settings.php" class="btn-primary">Nodig uit</a>
+                        <h3>Bekijk alle vragenlijsten</h3>
+                        <p>Bekijk en beheer alle vragenlijsten die je hebt aangemaakt.</p>
+                        <a href="/Skillradar/survey/view_surveys.php" class="btn-primary">Bekijk vragenlijsten</a>
                     </div>
 
                     <div class="dashboard-card">
@@ -75,7 +75,7 @@ if (!$isTeacher && !$isStudent) {
                         </div>
                         <h3>Bekijk resultaten</h3>
                         <p>Analyseer groepsresultaten en exporteer rapporten.</p>
-                        <a href="/Skillradar/dashboard/dashboard.php" class="btn-primary">Bekijk resultaten</a>
+                        <a href="/Skillradar/survey/view_survey.php" class="btn-primary">Bekijk resultaten</a>
                     </div>
 
                 <?php else: ?>
@@ -95,7 +95,7 @@ if (!$isTeacher && !$isStudent) {
                         </div>
                         <h3>Mijn resultaten</h3>
                         <p>Bekijk je persoonlijke scores en voortgang per skill.</p>
-                        <a href="/Skillradar/dashboard/dashboard.php" class="btn-primary">Bekijk resultaten</a>
+                        <a href="/Skillradar/survey/view_survey.php" class="btn-primary">Bekijk resultaten</a>
                     </div>
 
                     <div class="dashboard-card">
