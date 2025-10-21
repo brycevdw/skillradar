@@ -104,16 +104,7 @@ if (!$isTeacher && !$isStudent) {
                         </div>
                         <h3>Mijn groep</h3>
                         <p>Bekijk je groepsleden en gezamenlijke resultaten.</p>
-                        <a href="/Skillradar/dashboard/dashboard.php" class="btn-primary">Bekijk groep</a>
-                    </div>
-
-                    <div class="dashboard-card">
-                        <div class="icon-circle">
-                            <img src="https://cdn-icons-png.flaticon.com/512/2910/2910769.png" alt="Instellingen" />
-                        </div>
-                        <h3>Instellingen</h3>
-                        <p>Pas je profiel en accountinstellingen aan.</p>
-                        <a href="/Skillradar/login/login.php" class="btn-primary">Open instellingen</a>
+                        <a href="/Skillradar/survey/student_groups.php" class="btn-primary">Bekijk groep</a>
                     </div>
 
                 <?php endif; ?>

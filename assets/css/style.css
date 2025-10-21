@@ -592,95 +592,177 @@ header {
     box-shadow: 0 20px 40px rgba(0,0,0,0.12);
 }
 
-/* Call to Action Section - Verbeterd en Professioneel */
+/* Call to Action Section - Compacter met waves */
 .cta {
-    max-width: 1450px;      /* maximaal zo breed */
-    margin: 0 auto 10px;    /* auto links/rechts centert de sectie */
-    padding: 4em 2em;       /* ruimte binnen de sectie */
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
     background: linear-gradient(135deg, #1a73e8 0%, #4fc3f7 100%);
     color: #fff;
     text-align: center;
     position: relative;
     overflow: hidden;
-    border-radius: 20px;
+    box-sizing: border-box;
 }
 
-/* Subtiele bewegende achtergrond elementen */
-.cta::before,
-.cta::after {
-    content: '';
-    position: absolute;
-    border-radius: 50%;
-    opacity: 0.1;
-    z-index: 0;
-}
-
-.cta::before {
-    width: 150px;
-    height: 150px;
-    background: #ffdd57;
-    top: -40px;
-    left: 10%;
-    animation: floatShape 18s ease-in-out infinite alternate;
-}
-
-.cta::after {
-    width: 200px;
-    height: 200px;
-    background: #ffc107;
-    bottom: -50px;
-    right: 15%;
-    animation: floatShape 22s ease-in-out infinite alternate-reverse;
-}
-
-/* Tekst en knop boven de shapes */
-.cta h2 {
-    font-size: 2.5em;
-    margin-bottom: 1.5em;
+/* Wave aan de bovenkant - kleiner */
+.wave-top {
     position: relative;
-    z-index: 1;
+    width: 100%;
+    height: 60px;
+    overflow: hidden;
+}
+
+.wave-top svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* Content compacter */
+.cta h2 {
+    font-size: 2.2em;
+    margin: 1.5em 0 0.8em 0;
     line-height: 1.2;
     color: #fff;
     font-weight: 700;
+    position: relative;
+    z-index: 2;
 }
 
 .cta .btn-primary {
-    position: relative;
-    z-index: 1;
-    padding: 1em 2.5em;
-    font-size: 1.2em;
+    padding: 0.9em 2.2em;
+    font-size: 1.1em;
     font-weight: 600;
     border-radius: 50px;
     background-color: #ffdd57;
     color: #1a73e8;
     text-decoration: none;
     transition: all 0.3s ease;
+    display: inline-block;
+    margin-bottom: 2em;
+    position: relative;
+    z-index: 2;
 }
 
 .cta .btn-primary:hover {
     background-color: #ffc107;
     transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
 
-/* Animatie voor zwevende shapes (zelfde als hero) */
+/* Decoratieve shapes - kleiner en minder opdringerig */
+.floating-shape {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.08;
+    z-index: 0;
+}
+
+.shape1 {
+    width: 120px;
+    height: 120px;
+    background: #ffdd57;
+    top: 80px;
+    left: 8%;
+    animation: floatShape 18s ease-in-out infinite alternate;
+}
+
+.shape2 {
+    width: 150px;
+    height: 150px;
+    background: #ffc107;
+    top: 50%;
+    right: 12%;
+    animation: floatShape 22s ease-in-out infinite alternate-reverse;
+}
+
+.shape3 {
+    width: 80px;
+    height: 80px;
+    background: #fff;
+    bottom: 100px;
+    left: 15%;
+    animation: floatShape 20s ease-in-out infinite;
+}
+
+.floating-circle {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    z-index: 0;
+}
+
+/* Wave Container aan de onderkant - kleiner */
+.wave-container {
+    position: relative;
+    width: 100%;
+    height: 80px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+.wave-container svg {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 200%;
+    height: 100%;
+}
+
+/* Wave Path Animations */
+.wave-path.wave-1 {
+    animation: wave-move-1 15s linear infinite;
+}
+
+.wave-path.wave-2 {
+    animation: wave-move-2 20s linear infinite;
+}
+
+.wave-path.wave-3 {
+    animation: wave-move-3 25s linear infinite;
+}
+
+@keyframes wave-move-1 {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+@keyframes wave-move-2 {
+    0% { transform: translateX(-50%); }
+    100% { transform: translateX(0); }
+}
+
+@keyframes wave-move-3 {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
 @keyframes floatShape {
     0% { transform: translateY(0) translateX(0); }
-    50% { transform: translateY(-20px) translateX(10px); }
+    50% { transform: translateY(-15px) translateX(8px); }
     100% { transform: translateY(0) translateX(0); }
 }
 
-/* Responsive tweaks */
+/* Responsive */
 @media (max-width: 768px) {
-    .cta {
-        padding: 3em 2em;
-        border-radius: 15px;
+    .wave-top {
+        height: 40px;
     }
     .cta h2 {
-        font-size: 2em;
+        font-size: 1.8em;
+        margin: 1em 0 0.6em 0;
     }
     .cta .btn-primary {
-        padding: 0.8em 2em;
-        font-size: 1.1em;
+        padding: 0.8em 1.8em;
+        font-size: 1em;
+        margin-bottom: 1.5em;
+    }
+    .wave-container {
+        height: 60px;
     }
 }
 

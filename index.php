@@ -18,7 +18,7 @@
         <div class="hero-content">
             <h1 class="typewriter">Verbeter de samenwerking in jouw projectgroep</h1>
             <p class="typewriter-desc">Ontwikkel efficiënte teams, verzamel anonieme feedback en visualiseer resultaten met onze radar charts.</p>
-            <a href="register.php" class="btn-primary hero-btn">Creëer je vragenlijst</a>
+            <a href="login/register.php" class="btn-primary hero-btn">Creëer je vragenlijst</a>
         </div>
         <div class="hero-image">
             <img src="assets/img/teamwork.png" alt="Teamwork illustration">
@@ -90,7 +90,7 @@
     <!-- Call to Action -->
     <section class="cta">
         <h2>Klaar om jouw projectgroepen te verbeteren?</h2>
-        <a href="register.php" class="btn-primary">Start nu</a>
+        <a href="login/register.php" class="btn-primary">Start nu</a>
 
         <!-- Floating shapes (voor animatie) -->
         <div class="floating-shape shape1"></div>

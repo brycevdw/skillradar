@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Gegenereerd op: 20 okt 2025 om 14:14
+-- Gegenereerd op: 21 okt 2025 om 09:31
 -- Serverversie: 10.4.28-MariaDB
 -- PHP-versie: 8.2.4
 
@@ -38,7 +38,7 @@ CREATE TABLE `groups` (
 --
 
 INSERT INTO `groups` (`id`, `name`, `created_by`) VALUES
-(8, 'Skillsradar', 1);
+(13, 'Skillsradar', 1);
 
 -- --------------------------------------------------------
 
@@ -73,7 +73,8 @@ CREATE TABLE `questions` (
 INSERT INTO `questions` (`id`, `skill_id`, `question_text`, `question_type`, `question_options`) VALUES
 (1, 1, 'hallo', 'boolean', NULL),
 (2, 1, 'Is malik gay', 'scale', NULL),
-(3, 1, 'Is hij zwart', 'boolean', NULL);
+(3, 1, 'Is hij zwart', 'boolean', NULL),
+(4, 1, 'Test', 'scale', NULL);
 
 -- --------------------------------------------------------
 
@@ -124,6 +125,13 @@ CREATE TABLE `surveys` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Gegevens worden geëxporteerd voor tabel `surveys`
+--
+
+INSERT INTO `surveys` (`id`, `title`, `group_id`, `created_by`, `anonymous`, `created_at`) VALUES
+(6, 'Test', 13, 1, 1, '2025-10-20 12:35:06');
+
 -- --------------------------------------------------------
 
 --
@@ -135,6 +143,13 @@ CREATE TABLE `survey_questions` (
   `survey_id` int(11) NOT NULL,
   `question_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Gegevens worden geëxporteerd voor tabel `survey_questions`
+--
+
+INSERT INTO `survey_questions` (`id`, `survey_id`, `question_id`) VALUES
+(4, 6, 4);
 
 -- --------------------------------------------------------
 
@@ -231,7 +246,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT voor een tabel `groups`
 --
 ALTER TABLE `groups`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT voor een tabel `group_members`
@@ -243,7 +258,7 @@ ALTER TABLE `group_members`
 -- AUTO_INCREMENT voor een tabel `questions`
 --
 ALTER TABLE `questions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT voor een tabel `responses`
@@ -261,13 +276,13 @@ ALTER TABLE `skills`
 -- AUTO_INCREMENT voor een tabel `surveys`
 --
 ALTER TABLE `surveys`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT voor een tabel `survey_questions`
 --
 ALTER TABLE `survey_questions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT voor een tabel `users`

@@ -34,37 +34,31 @@ if ($q && mysqli_num_rows($q) > 0) {
     $skill_id = mysqli_insert_id($conn);
 }
 
-// Handle DELETE request
-if (isset($_GET['delete']) && isset($_GET['id'])) {
-    $delete_id = intval($_GET['id']);
-    mysqli_query($conn, "DELETE FROM surveys WHERE id = $delete_id AND created_by = $user_id");
-    header('Location: survey.php?deleted=1');
-    exit;
-}
-
 // Handel POST af: opslaan van survey + vragen
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $title = trim(mysqli_real_escape_string($conn, $_POST['title'] ?? ''));
     $group_id = intval($_POST['group_id'] ?? 0);
-    $anonymous = isset($_POST['anonymous']) ? 1 : 0;
+    $anonymous = 1;
     $questions = $_POST['questions'] ?? [];
+    $question_types = $_POST['question_types'] ?? [];
+    $options = $_POST['options'] ?? [];
 
     $errors = [];
     if ($title === '') $errors[] = 'Vul een titel in.';
     if (empty($questions)) $errors[] = 'Voeg minimaal 1 vraag toe.';
     
-    // FIX: Controleer of group_id bestaat als het niet 0 is
+    // Controleer of group_id bestaat als het niet 0 is
     if ($group_id > 0) {
-        $check_group = mysqli_query($conn, "SELECT id FROM `groups` WHERE id = $group_id LIMIT 1");
+        $check_group = mysqli_query($conn, "SELECT id FROM `groups` WHERE id = $group_id AND created_by = $user_id LIMIT 1");
         if (!$check_group || mysqli_num_rows($check_group) === 0) {
-            $errors[] = 'Geselecteerde groep bestaat niet. Maak eerst een groep aan.';
+            $errors[] = 'Geselecteerde groep bestaat niet.';
         }
     }
 
     if (empty($errors)) {
-        // FIX: Als group_id 0 is, maak dan een standaard groep aan
+        // Als group_id 0 is, maak dan een standaard groep aan
         if ($group_id === 0) {
-            $default_group_name = "Algemene groep - " . date('Y-m-d H:i:s');
+            $default_group_name = "Algemene groep - " . date('d-m-Y H:i');
             $stmt = mysqli_prepare($conn, "INSERT INTO `groups` (name, created_by) VALUES (?, ?)");
             mysqli_stmt_bind_param($stmt, 'si', $default_group_name, $user_id);
             mysqli_stmt_execute($stmt);
@@ -82,9 +76,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Insert questions and link to survey
         $stmtQ = mysqli_prepare($conn, "INSERT INTO questions (skill_id, question_text, question_type, question_options) VALUES (?, ?, ?, ?)");
         $stmtLink = mysqli_prepare($conn, "INSERT INTO survey_questions (survey_id, question_id) VALUES (?, ?)");
-        
-        $question_types = $_POST['question_types'] ?? [];
-        $options = $_POST['options'] ?? [];
         
         foreach ($questions as $index => $qtext) {
             $qtext = trim($qtext);
@@ -118,17 +109,6 @@ if ($gq) {
     while ($gr = mysqli_fetch_assoc($gq)) $groups[] = $gr;
 }
 
-// Haal bestaande surveys op
-$existing_surveys = [];
-$sq = mysqli_query($conn, "SELECT s.id, s.title, s.created_at, g.name as group_name 
-                           FROM surveys s 
-                           LEFT JOIN `groups` g ON s.group_id = g.id 
-                           WHERE s.created_by = $user_id 
-                           ORDER BY s.created_at DESC");
-if ($sq) {
-    while ($sr = mysqli_fetch_assoc($sq)) $existing_surveys[] = $sr;
-}
-
 ?>
 
 <!DOCTYPE html>
@@ -136,13 +116,360 @@ if ($sq) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vragenlijst Beheer - Gilde Skillsradar</title>
+    <title>Vragenlijst Maken - Gilde Skillsradar</title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>
+    * { box-sizing: border-box; }
+    
+    body {
+        background: #f5f7fb;
+        min-height: 100vh;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #1f2937;
+        margin: 0;
+        padding: 0;
+    }
+
+    .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 2.5em 1.2em;
+    }
+
+    .card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(15,99,212,0.04);
+        overflow: hidden;
+        margin-bottom: 2em;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #0f63d4 0%, #0a4fa8 100%);
+        padding: 2.5em 2em;
+        text-align: center;
+        color: white;
+    }
+
+    .card-header h1 {
+        margin: 0 0 0.5em;
+        font-size: 1.8em;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5em;
+    }
+
+    .card-header p {
+        margin: 0;
+        opacity: 0.95;
+        font-size: 1em;
+    }
+
+    .card-body {
+        padding: 2.5em;
+    }
+
+    .alert {
+        padding: 1.2em 1.5em;
+        border-radius: 12px;
+        margin-bottom: 2em;
+        display: flex;
+        align-items: flex-start;
+        gap: 1em;
+    }
+
+    .alert-success {
+        background: #d1fae5;
+        border-left: 4px solid #10b981;
+        color: #065f46;
+    }
+
+    .alert-error {
+        background: #fee2e2;
+        border-left: 4px solid #ef4444;
+        color: #991b1b;
+    }
+
+    .form-group {
+        margin-bottom: 2em;
+    }
+
+    .form-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5em;
+        font-weight: 600;
+        color: #0f63d4;
+        margin-bottom: 0.7em;
+        font-size: 1.05em;
+    }
+
+    .form-input, .form-select {
+        width: 100%;
+        padding: 0.9em 1.1em;
+        border: 1.8px solid #e6eefc;
+        border-radius: 10px;
+        font-size: 0.95em;
+        transition: all 0.3s ease;
+        background: #f8fbff;
+    }
+
+    .form-input:focus, .form-select:focus {
+        outline: none;
+        border-color: #0f63d4;
+        box-shadow: 0 6px 18px rgba(15,99,212,0.06);
+        background: #fff;
+    }
+
+    .form-select {
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%230f63d4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 1.2em center;
+        padding-right: 3em;
+    }
+
+    .form-hint {
+        display: block;
+        margin-top: 0.6em;
+        font-size: 0.9em;
+        color: #6b7280;
+    }
+
+    .form-hint a {
+        color: #0f63d4;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .form-hint a:hover {
+        text-decoration: underline;
+    }
+
+    .info-box {
+        background: #f0f9ff;
+        border: 2px solid #bae6fd;
+        border-radius: 12px;
+        padding: 1.2em 1.5em;
+        display: flex;
+        align-items: flex-start;
+        gap: 1em;
+    }
+
+    .info-box-icon {
+        flex-shrink: 0;
+        width: 24px;
+        height: 24px;
+        background: #0f63d4;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 0.85em;
+    }
+
+    .info-box-content {
+        color: #075985;
+        line-height: 1.6;
+        font-size: 0.95em;
+    }
+
+    .section-title {
+        font-size: 1.4em;
+        font-weight: 700;
+        color: #0f63d4;
+        margin: 2.5em 0 1.5em;
+        display: flex;
+        align-items: center;
+        gap: 0.5em;
+    }
+
+    .question-card {
+        background: #f8fbff;
+        border: 2px solid #e6eefc;
+        border-radius: 12px;
+        padding: 2em;
+        margin-bottom: 1.5em;
+        transition: all 0.3s ease;
+    }
+
+    .question-card:hover {
+        border-color: #0f63d4;
+        box-shadow: 0 6px 18px rgba(15,99,212,0.08);
+        transform: translateY(-2px);
+    }
+
+    .question-header {
+        display: flex;
+        gap: 1em;
+        margin-bottom: 1.5em;
+        align-items: flex-start;
+    }
+
+    .question-number {
+        flex-shrink: 0;
+        width: 36px;
+        height: 36px;
+        background: #0f63d4;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 1.1em;
+    }
+
+    .question-inputs {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 1em;
+    }
+
+    .question-textarea {
+        width: 100%;
+        padding: 1em;
+        border: 1.8px solid #e6eefc;
+        border-radius: 10px;
+        font-size: 0.95em;
+        resize: vertical;
+        min-height: 80px;
+        transition: all 0.3s ease;
+        background: #fff;
+    }
+
+    .question-textarea:focus {
+        outline: none;
+        border-color: #0f63d4;
+        box-shadow: 0 6px 18px rgba(15,99,212,0.06);
+    }
+
+    .question-type-select {
+        padding: 0.8em 1em;
+        border: 1.8px solid #e6eefc;
+        border-radius: 10px;
+        background: #fff;
+        cursor: pointer;
+        font-size: 0.95em;
+        transition: all 0.3s ease;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%230f63d4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 1em center;
+        padding-right: 2.5em;
+    }
+
+    .question-type-select:focus {
+        outline: none;
+        border-color: #0f63d4;
+        box-shadow: 0 6px 18px rgba(15,99,212,0.06);
+    }
+
+    .question-options-input {
+        display: none;
+        margin-top: 1em;
+    }
+
+    .options-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.8em;
+    }
+
+    .option-item {
+        display: flex;
+        gap: 0.8em;
+        align-items: center;
+    }
+
+    .option-item input {
+        flex: 1;
+        padding: 0.8em 1em;
+        border: 1.8px solid #e6eefc;
+        border-radius: 10px;
+        font-size: 0.95em;
+        background: #fff;
+        transition: all 0.3s ease;
+    }
+
+    .option-item input:focus {
+        outline: none;
+        border-color: #0f63d4;
+        box-shadow: 0 6px 18px rgba(15,99,212,0.06);
+    }
+
+    .btn-remove-option {
+        background: #fee2e2;
+        color: #dc2626;
+        border: none;
+        padding: 0.6em 0.8em;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .btn-remove-option:hover {
+        background: #dc2626;
+        color: white;
+    }
+
+    .btn-add-option {
+        background: #eef6ff;
+        color: #0f63d4;
+        border: 2px dashed #0f63d4;
+        padding: 0.8em 1.2em;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5em;
+        margin-top: 0.5em;
+    }
+
+    .btn-add-option:hover {
+        background: #0f63d4;
+        color: white;
+    }
+
+    .preview-choice-options {
+        display: flex;
+        flex-direction: column;
+        gap: 0.8em;
+    }
+
+    .preview-choice-option {
+        padding: 1em;
+        border: 2px solid #e6eefc;
+        border-radius: 10px;
+        background: #f8fbff;
+        display: flex;
+        align-items: center;
+        gap: 0.8em;
+    }
+
+    .preview-choice-option input[type="radio"] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+
     .scale-options {
         display: flex;
-        gap: 0.5em;
-        margin-top: 0.8em;
+        gap: 0.8em;
+        justify-content: center;
         flex-wrap: wrap;
     }
 
@@ -157,354 +484,469 @@ if ($sq) {
         display: none;
     }
 
-    .scale-icon {
-        width: 50px;
-        height: 50px;
+    .scale-circle {
+        width: 56px;
+        height: 56px;
         border-radius: 50%;
-        background: #f0f0f0;
+        background: #f6f9ff;
+        border: 2px solid #e6eefc;
         display: flex;
         align-items: center;
         justify-content: center;
+        font-size: 1.3em;
+        font-weight: 700;
+        color: #0f63d4;
         transition: all 0.3s ease;
-        border: 2px solid transparent;
     }
 
-    .scale-option:hover .scale-icon {
-        background: #e3f2fd;
+    .scale-option:hover .scale-circle {
+        background: #eef6ff;
+        border-color: #0f63d4;
         transform: scale(1.1);
-    }
-
-    .scale-option input[type="radio"]:checked + .scale-icon {
-        background: linear-gradient(135deg, #1a73e8, #4fc3f7);
-        border-color: #1a73e8;
-    }
-
-    .scale-icon svg {
-        fill: #999;
-        transition: fill 0.3s ease;
-    }
-
-    .scale-option input[type="radio"]:checked + .scale-icon svg {
-        fill: white;
+        box-shadow: 0 6px 18px rgba(15,99,212,0.12);
     }
 
     .scale-label {
-        margin-top: 0.3em;
+        margin-top: 0.5em;
         font-size: 0.85em;
-        color: #666;
+        color: #6b7280;
         font-weight: 500;
     }
 
     .boolean-options {
         display: flex;
         gap: 1em;
-        margin-top: 0.8em;
     }
 
     .boolean-option {
         flex: 1;
-        padding: 1em;
-        border: 2px solid #e0e0e0;
-        border-radius: 12px;
+        padding: 1.2em;
+        border: 2px solid #e6eefc;
+        border-radius: 10px;
         cursor: pointer;
         transition: all 0.3s ease;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 0.8em;
+        font-size: 1.1em;
+        font-weight: 600;
+        color: #6b7280;
+        background: #f6f9ff;
     }
 
     .boolean-option:hover {
-        border-color: #1a73e8;
-        background: #f8f9fa;
-    }
-
-    .boolean-option input[type="radio"] {
-        display: none;
-    }
-
-    .boolean-option input[type="radio"]:checked + .boolean-content {
-        color: #1a73e8;
-        font-weight: 600;
-    }
-
-    .survey-list-item {
-        background: white;
-        padding: 1.5em;
-        border-radius: 12px;
-        border: 2px solid #e0e0e0;
-        margin-bottom: 1em;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        transition: all 0.3s ease;
-    }
-
-    .survey-list-item:hover {
-        border-color: #1a73e8;
+        border-color: #0f63d4;
+        background: #eef6ff;
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(26,115,232,0.15);
     }
 
-    .survey-actions {
-        display: flex;
-        gap: 0.8em;
+    .boolean-option:active {
+        transform: translateY(0);
     }
 
-    .btn-edit, .btn-delete {
-        padding: 0.6em 1.2em;
-        border-radius: 8px;
+    .preview-text textarea {
+        width: 100%;
+        padding: 1em;
+        border: 1.8px solid #e6eefc;
+        border-radius: 10px;
+        resize: vertical;
+        min-height: 100px;
+        background: #f8fbff;
+    }
+
+    .preview-choice {
+        color: #6b7280;
+        font-style: italic;
+        text-align: center;
+        padding: 2em;
+    }
+
+    .btn-remove {
+        background: #fee2e2;
+        color: #dc2626;
         border: none;
+        padding: 0.8em 1.5em;
+        border-radius: 10px;
         cursor: pointer;
-        font-weight: 500;
+        font-weight: 600;
         transition: all 0.3s ease;
         display: flex;
         align-items: center;
         gap: 0.5em;
+        margin-top: 1em;
     }
 
-    .btn-edit {
-        background: #e3f2fd;
-        color: #1a73e8;
-    }
-
-    .btn-edit:hover {
-        background: #1a73e8;
-        color: white;
-    }
-
-    .btn-delete {
-        background: #fee2e2;
-        color: #dc2626;
-    }
-
-    .btn-delete:hover {
+    .btn-remove:hover {
         background: #dc2626;
         color: white;
+        transform: translateY(-2px);
     }
 
-    .question-item {
-        background: white;
-        padding: 1.5em;
+    .btn-remove:active {
+        transform: translateY(0);
+    }
+
+    .btn-add-question {
+        width: 100%;
+        padding: 1.2em;
+        background: #eef6ff;
+        border: 2px dashed #0f63d4;
         border-radius: 12px;
-        border: 2px solid #e0e0e0;
-        margin-bottom: 1.5em;
+        color: #0f63d4;
+        font-weight: 700;
+        font-size: 1.05em;
+        cursor: pointer;
         transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5em;
+        margin: 2em 0;
     }
 
-    .question-item:hover {
-        border-color: #1a73e8;
+    .btn-add-question:hover {
+        background: #0f63d4;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(15,99,212,0.12);
+    }
+
+    .form-actions {
+        margin-top: 3em;
+        padding-top: 2em;
+        border-top: 2px solid #f3f4f6;
+    }
+
+    .btn-submit {
+        background: #0f63d4;
+        color: white;
+        border: none;
+        padding: 1.2em 3em;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 1.1em;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 6px 20px rgba(15,99,212,0.12);
+    }
+
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(15,99,212,0.20);
+    }
+
+    .btn-submit:active {
+        transform: translateY(0);
+    }
+
+    @media(max-width:768px){
+        .container{padding:1.5em 1em;}
+        .card-body{padding:1.5em;}
+        .question-header{flex-direction:column;}
+        .scale-options{gap:0.5em;}
+        .scale-circle{width:48px;height:48px;font-size:1.1em;}
     }
     </style>
 </head>
 <body>
 
-<main style="padding:3em 2em;background:#f9f9f9;min-height:100vh">
-    <div class="auth-container" style="max-width:900px;margin:0 auto;background:white;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,0.05);overflow:hidden">
-        <div style="background:#1a73e8;padding:2em;text-align:center;position:relative">
-            <h2 style="color:white;font-size:1.8em;margin-bottom:0.5em;font-weight:600">Vragenlijst beheer</h2>
-            <p style="color:rgba(255,255,255,0.9);max-width:600px;margin:0 auto;font-size:0.95em">
-                Maak nieuwe vragenlijsten of beheer bestaande enquêtes
-            </p>
-        </div>
-        <div style="padding:3em 2em 2em">
-
-        <?php if (!empty($errors)): ?>
-            <div style="background:#fee2e2;border-left:4px solid #dc2626;padding:1em 1.2em;margin-bottom:2em;border-radius:8px">
-                <div style="color:#dc2626;font-weight:500;margin-bottom:0.3em">Er zijn enkele problemen gevonden:</div>
-                <ul style="color:#7f1d1d;margin:0;padding-left:1.5em">
-                    <?php foreach ($errors as $error): ?>
-                        <li><?php echo htmlspecialchars($error); ?></li>
-                    <?php endforeach; ?>
-                </ul>
-            </div>
-        <?php endif; ?>
-
-        <?php if (isset($_GET['created'])): ?>
-            <div style="background:#ecfdf5;border-left:4px solid #059669;padding:1.2em;margin-bottom:2em;border-radius:8px;display:flex;align-items:center;gap:1em">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M20 6L9 17l-5-5" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h1>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
                 </svg>
-                <div>
-                    <div style="color:#059669;font-weight:500">Vragenlijst succesvol aangemaakt</div>
-                </div>
-            </div>
-        <?php endif; ?>
-
-        <?php if (isset($_GET['deleted'])): ?>
-            <div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:1.2em;margin-bottom:2em;border-radius:8px">
-                <div style="color:#92400e;font-weight:500">Vragenlijst succesvol verwijderd</div>
-            </div>
-        <?php endif; ?>
-
-        <!-- Bestaande vragenlijsten -->
-        <?php if (!empty($existing_surveys)): ?>
-            <div style="margin-bottom:3em">
-                <h3 style="color:#1a73e8;margin-bottom:1.5em;display:flex;align-items:center;gap:0.5em">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                        <path d="M3 4h14M3 10h10M3 16h14" stroke="#1a73e8" stroke-width="2" stroke-linecap="round"/>
+                Nieuwe Vragenlijst Maken
+            </h1>
+            <p>Stel vragen samen voor je groep en verzamel waardevolle feedback</p>
+        </div>
+        
+        <div class="card-body">
+            <?php if (!empty($errors)): ?>
+                <div class="alert alert-error">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                     </svg>
-                    Mijn vragenlijsten
-                </h3>
-                <?php foreach ($existing_surveys as $survey): ?>
-                    <div class="survey-list-item">
-                        <div>
-                            <h4 style="margin:0 0 0.3em;color:#1a73e8"><?php echo htmlspecialchars($survey['title']); ?></h4>
-                            <p style="margin:0;color:#666;font-size:0.9em">
-                                <?php echo $survey['group_name'] ? htmlspecialchars($survey['group_name']) : 'Algemene groep'; ?> • 
-                                <?php echo date('d-m-Y H:i', strtotime($survey['created_at'])); ?>
-                            </p>
-                        </div>
-                        <div class="survey-actions">
-                            <a href="view_survey.php?id=<?php echo $survey['id']; ?>" class="btn-edit">
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                    <path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                                </svg>
-                                Bekijk
-                            </a>
-                            <button class="btn-delete" onclick="if(confirm('Weet je zeker dat je deze vragenlijst wilt verwijderen?')) window.location='survey.php?delete=1&id=<?php echo $survey['id']; ?>'">
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                    <path d="M2 4h12M5.333 4V2.667a1.333 1.333 0 011.334-1.334h2.666a1.333 1.333 0 011.334 1.334V4m2 0v9.333a1.333 1.333 0 01-1.334 1.334H4.667a1.333 1.333 0 01-1.334-1.334V4h9.334z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                                Verwijder
-                            </button>
+                    <div>
+                        <div style="font-weight:600;margin-bottom:0.5em">Er zijn enkele problemen:</div>
+                        <ul style="margin:0;padding-left:1.5em">
+                            <?php foreach ($errors as $error): ?>
+                                <li><?php echo htmlspecialchars($error); ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <?php if (isset($_GET['created'])): ?>
+                <div class="alert alert-success">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                    <div>
+                        <div style="font-weight:600">Vragenlijst succesvol aangemaakt!</div>
+                        <div style="margin-top:0.3em">Je vragenlijst is opgeslagen en klaar om te delen met je groep.</div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <form method="post">
+                <div class="form-group">
+                    <label class="form-label">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                        Titel van de vragenlijst
+                    </label>
+                    <input type="text" name="title" class="form-input" placeholder="Bijv. Tussentijdse evaluatie groepswerk" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+                        </svg>
+                        Selecteer een groep
+                    </label>
+                    <select name="group_id" class="form-select">
+                        <option value="0">Maak automatisch een nieuwe algemene groep aan</option>
+                        <?php foreach ($groups as $gr): ?>
+                            <option value="<?= $gr['id'] ?>"><?= htmlspecialchars($gr['name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <span class="form-hint">
+                        <?php if (empty($groups)): ?>
+                            Je hebt nog geen groepen. <a href="groups.php">Klik hier om een groep aan te maken</a>, of laat het systeem automatisch een algemene groep aanmaken.
+                        <?php else: ?>
+                            Kies een bestaande groep of laat automatisch een nieuwe algemene groep aanmaken.
+                        <?php endif; ?>
+                    </span>
+                </div>
+
+                <div class="form-group">
+                    <div class="info-box">
+                        <div class="info-box-icon">i</div>
+                        <div class="info-box-content">
+                            <strong>Privacy & Anonimiteit:</strong> Studenten vullen de vragenlijst anoniem in voor elkaar. 
+                            Jij als docent kunt altijd zien wie welke antwoorden heeft gegeven voor evaluatiedoeleinden.
                         </div>
                     </div>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
+                </div>
 
-        <h3 style="color:#1a73e8;margin-bottom:1.5em;display:flex;align-items:center;gap:0.5em">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M10 4v12M4 10h12" stroke="#1a73e8" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            Nieuwe vragenlijst maken
-        </h3>
+                <div class="section-title">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    Vragen
+                </div>
 
-        <form method="post">
-            <div class="form-group" style="margin-bottom:2em">
-                <label style="display:block;color:#444;font-weight:500;margin-bottom:0.5em">Titel vragenlijst</label>
-                <input type="text" name="title" placeholder="Bijv. Tussentijdse evaluatie" required 
-                    style="width:100%;padding:0.8em 1em;border:2px solid #e0e0e0;border-radius:8px;font-size:1em;transition:all 0.3s ease;background:#fff">
-            </div>
+                <div id="questions-wrap"></div>
 
-            <div class="form-group" style="margin-bottom:2em">
-                <label style="display:block;color:#444;font-weight:500;margin-bottom:0.5em">Selecteer groep</label>
-                <select name="group_id" style="width:100%;padding:0.8em 1em;border:2px solid #e0e0e0;border-radius:8px;font-size:1em;background:#fff;cursor:pointer">
-                    <option value="0">Maak nieuwe algemene groep aan</option>
-                    <?php foreach ($groups as $gr): ?>
-                        <option value="<?= $gr['id'] ?>"><?= htmlspecialchars($gr['name']) ?></option>
-                    <?php endforeach; ?>
-                </select>
-                <small style="color:#666;display:block;margin-top:0.5em">
-                    Heb je nog geen groep? <a href="groups.php" style="color:#1a73e8;text-decoration:underline">Maak een groep aan</a>. Er wordt automatisch een nieuwe aangemaakt als je geen groep kiest.
-                </small>
-            </div>
-
-            <div class="form-group" style="margin-bottom:2em;background:#f8f9fa;padding:1.2em;border-radius:8px">
-                <label style="display:flex;align-items:center;gap:0.8em;cursor:pointer">
-                    <input type="checkbox" name="anonymous" checked style="width:20px;height:20px;cursor:pointer">
-                    <span style="color:#444">Anonieme vragenlijst</span>
-                </label>
-            </div>
-
-            <div style="margin:2.5em 0 1.5em">
-                <h3 style="color:#1a73e8;font-weight:600">Vragen</h3>
-            </div>
-            <div id="questions-wrap"></div>
-
-            <button type="button" id="add-question" class="btn-primary" 
-                style="background:#f8f9fa;color:#1a73e8;border:2px solid #1a73e8;margin:2em 0;width:100%;padding:1em;cursor:pointer;font-weight:500;border-radius:8px">
-                + Nieuwe vraag toevoegen
-            </button>
-
-            <div style="margin-top:3em;border-top:2px solid #f0f0f0;padding-top:2em;display:flex;gap:1em">
-                <button type="submit" class="btn-primary" style="background:#1a73e8;color:white;border:none;padding:1em 2.5em;border-radius:12px;cursor:pointer;font-weight:500;">
-                    Vragenlijst opslaan
+                <button type="button" id="add-question" class="btn-add-question">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Nieuwe vraag toevoegen
                 </button>
-                <a href="../dashboard/dashboard.php" style="padding:1em 2em;border-radius:12px;background:#f0f0f0;color:#666;text-decoration:none;display:flex;align-items:center">
-                    Terug naar dashboard
-                </a>
-            </div>
-        </form>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-submit">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:0.5em">
+                            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+                        </svg>
+                        Vragenlijst opslaan
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-</main>
+</div>
 
 <script>
-let questionCount = 0;
+function addQuestion() {
+    const wrap = document.getElementById('questions-wrap');
+    const currentCount = wrap.querySelectorAll('.question-card').length;
+    const html = createQuestionHTML(currentCount);
+    wrap.insertAdjacentHTML('beforeend', html);
+    
+    // Add event listeners to option inputs
+    const newCard = wrap.lastElementChild;
+    const optionInputs = newCard.querySelectorAll('.option-input');
+    optionInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            updateChoicePreview(this);
+        });
+    });
+}
 
 function createQuestionHTML(index) {
     return `
-        <div class="question-item" data-index="${index}">
-            <div style="display:flex;gap:1em;margin-bottom:1em;flex-wrap:wrap">
-                <textarea name="questions[]" placeholder="Typ hier je vraag..." rows="2" required
-                    style="flex-grow:1;min-width:300px;padding:1em;border-radius:8px;border:2px solid #e0e0e0;resize:vertical"></textarea>
-                <select name="question_types[]" class="question-type-select" onchange="updateQuestionPreview(this)"
-                    style="padding:0.8em;border:2px solid #e0e0e0;border-radius:8px;background:#fff;cursor:pointer;min-width:150px">
-                    <option value="scale">Schaal (1-5)</option>
-                    <option value="text">Open antwoord</option>
-                    <option value="choice">Meerkeuze</option>
-                    <option value="boolean">Ja/Nee</option>
-                </select>
+        <div class="question-card" data-index="${index}">
+            <div class="question-header">
+                <div class="question-number">${index + 1}</div>
+                <div class="question-inputs">
+                    <textarea name="questions[]" class="question-textarea" placeholder="Typ hier je vraag..." rows="2" required></textarea>
+                    <select name="question_types[]" class="question-type-select" onchange="updateQuestionPreview(this)">
+                        <option value="scale">Schaal (1-5)</option>
+                        <option value="text">Open antwoord</option>
+                        <option value="choice">Meerkeuze</option>
+                        <option value="boolean">Ja/Nee</option>
+                    </select>
+                </div>
             </div>
-            <div class="question-options-input" style="display:none;margin-bottom:1em">
-                <input type="text" name="options[]" placeholder="Optie 1, Optie 2, Optie 3" 
-                    style="width:100%;padding:0.8em;border-radius:8px;border:2px solid #e0e0e0">
-                <small style="color:#666;display:block;margin-top:0.5em">Scheid opties met komma's</small>
+            
+            <div class="question-options-input">
+                <div class="options-list" data-question-index="${index}">
+                    <div class="option-item">
+                        <input type="text" class="option-input" placeholder="Optie 1" data-option-index="0">
+                        <button type="button" class="btn-remove-option" onclick="removeOption(this)" style="visibility:hidden">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <button type="button" class="btn-add-option" onclick="addOption(this)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Optie toevoegen
+                </button>
+                <input type="hidden" name="options[]" class="options-hidden">
             </div>
-            <div class="question-preview" style="margin-top:1em;padding:1em;background:#f8f9fa;border-radius:8px">
-                <small style="color:#666;display:block;margin-bottom:0.8em;font-weight:500">Preview:</small>
+            
+            <div class="question-preview">
+                <div style="font-size:0.9em;color:#6b7280;margin-bottom:1em;display:flex;align-items:center;gap:0.5em">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    Preview voor studenten
+                </div>
                 <div class="preview-scale">
                     <div class="scale-options">
                         ${[1,2,3,4,5].map(i => `
                             <label class="scale-option">
                                 <input type="radio" name="preview_${index}" disabled>
-                                <div class="scale-icon">
-                                    <svg width="24" height="24" viewBox="0 0 24 24">
-                                        <path d="M12 2l2.4 7.4h7.6l-6 4.4 2.3 7.2-6.3-4.6-6.3 4.6 2.3-7.2-6-4.4h7.6z"/>
-                                    </svg>
-                                </div>
-                                <span class="scale-label">${i}</span>
+                                <div class="scale-circle">${i}</div>
+                                <span class="scale-label">${i === 1 ? 'Slecht' : i === 5 ? 'Uitstekend' : ''}</span>
                             </label>
                         `).join('')}
                     </div>
                 </div>
                 <div class="preview-text" style="display:none">
-                    <textarea disabled placeholder="Open antwoord..." rows="3" style="width:100%;padding:0.8em;border-radius:8px;border:2px solid #e0e0e0;background:white"></textarea>
+                    <textarea disabled placeholder="Studenten kunnen hier hun antwoord typen..." rows="3"></textarea>
                 </div>
                 <div class="preview-choice" style="display:none">
-                    <div style="color:#666;font-style:italic">Meerkeuze opties verschijnen hier nadat je ze invult...</div>
+                    <div class="preview-choice-options"></div>
                 </div>
                 <div class="preview-boolean" style="display:none">
                     <div class="boolean-options">
                         <label class="boolean-option">
                             <input type="radio" name="bool_preview_${index}" disabled>
-                            <div class="boolean-content" style="font-size:1.1em">✓ Ja</div>
+                            <span>Ja</span>
                         </label>
                         <label class="boolean-option">
                             <input type="radio" name="bool_preview_${index}" disabled>
-                            <div class="boolean-content" style="font-size:1.1em">✗ Nee</div>
+                            <span>Nee</span>
                         </label>
                     </div>
                 </div>
             </div>
-            <button type="button" class="remove-q" onclick="removeQuestion(this)" 
-                style="background:#fee2e2;color:#dc2626;border:none;padding:0.6em 1em;border-radius:8px;cursor:pointer;margin-top:1em;font-weight:500">
+            
+            <button type="button" class="btn-remove" onclick="removeQuestion(this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                </svg>
                 Verwijder vraag
             </button>
         </div>
     `;
 }
 
+function addOption(btn) {
+    const optionsList = btn.previousElementSibling;
+    const questionIndex = optionsList.dataset.questionIndex;
+    const currentOptions = optionsList.querySelectorAll('.option-item');
+    const newIndex = currentOptions.length;
+    
+    const optionHTML = `
+        <div class="option-item">
+            <input type="text" class="option-input" placeholder="Optie ${newIndex + 1}" data-option-index="${newIndex}">
+            <button type="button" class="btn-remove-option" onclick="removeOption(this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+    `;
+    
+    optionsList.insertAdjacentHTML('beforeend', optionHTML);
+    
+    // Add event listener to new input
+    const newInput = optionsList.lastElementChild.querySelector('.option-input');
+    newInput.addEventListener('input', function() {
+        updateChoicePreview(this);
+    });
+    
+    // Update preview
+    updateChoicePreview(newInput);
+}
+
+function removeOption(btn) {
+    const optionItem = btn.closest('.option-item');
+    const optionsList = optionItem.closest('.options-list');
+    const options = optionsList.querySelectorAll('.option-item');
+    
+    // Don't allow removing if only one option left
+    if (options.length <= 1) return;
+    
+    optionItem.remove();
+    
+    // Update preview
+    const firstInput = optionsList.querySelector('.option-input');
+    if (firstInput) updateChoicePreview(firstInput);
+}
+
+function updateChoicePreview(input) {
+    const card = input.closest('.question-card');
+    const optionsList = card.querySelector('.options-list');
+    const previewContainer = card.querySelector('.preview-choice-options');
+    const hiddenInput = card.querySelector('.options-hidden');
+    
+    // Collect all option values
+    const options = [];
+    optionsList.querySelectorAll('.option-input').forEach(inp => {
+        const val = inp.value.trim();
+        if (val) options.push(val);
+    });
+    
+    // Update hidden input with JSON
+    hiddenInput.value = JSON.stringify(options);
+    
+    // Update preview
+    if (options.length === 0) {
+        previewContainer.innerHTML = '<div style="color:#6b7280;font-style:italic;text-align:center;padding:2em">Voeg opties toe om de preview te zien...</div>';
+    } else {
+        previewContainer.innerHTML = options.map((opt, i) => `
+            <label class="preview-choice-option">
+                <input type="radio" name="choice_preview_${card.dataset.index}" disabled>
+                <span>${opt}</span>
+            </label>
+        `).join('');
+    }
+}
+
 function updateQuestionPreview(select) {
-    const item = select.closest('.question-item');
+    const card = select.closest('.question-card');
     const type = select.value;
-    const optionsInput = item.querySelector('.question-options-input');
+    const optionsInput = card.querySelector('.question-options-input');
     const previews = {
-        scale: item.querySelector('.preview-scale'),
-        text: item.querySelector('.preview-text'),
-        choice: item.querySelector('.preview-choice'),
-        boolean: item.querySelector('.preview-boolean')
+        scale: card.querySelector('.preview-scale'),
+        text: card.querySelector('.preview-text'),
+        choice: card.querySelector('.preview-choice'),
+        boolean: card.querySelector('.preview-boolean')
     };
 
     // Hide all previews
@@ -515,24 +957,46 @@ function updateQuestionPreview(select) {
     
     // Show/hide options input for multiple choice
     optionsInput.style.display = type === 'choice' ? 'block' : 'none';
+    
+    if (type === 'choice') {
+        const firstInput = optionsInput.querySelector('.option-input');
+        if (firstInput) updateChoicePreview(firstInput);
+    }
 }
 
 function removeQuestion(btn) {
-    const item = btn.closest('.question-item');
-    item.style.opacity = '0';
-    item.style.transform = 'translateX(20px)';
-    item.style.transition = 'all 0.3s ease';
-    setTimeout(() => item.remove(), 300);
+    const card = btn.closest('.question-card');
+    card.style.opacity = '0';
+    card.style.transform = 'scale(0.95)';
+    card.style.transition = 'all 0.3s ease';
+    setTimeout(() => {
+        card.remove();
+        updateQuestionNumbers();
+    }, 300);
 }
 
-document.getElementById('add-question').addEventListener('click', function() {
-    const wrap = document.getElementById('questions-wrap');
-    wrap.insertAdjacentHTML('beforeend', createQuestionHTML(questionCount++));
-});
+function updateQuestionNumbers() {
+    const cards = document.querySelectorAll('.question-card');
+    cards.forEach((card, index) => {
+        const numberEl = card.querySelector('.question-number');
+        if (numberEl) numberEl.textContent = index + 1;
+        card.dataset.index = index;
+    });
+}
 
-// Add initial question on page load
 document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('add-question').click();
+    // Add event listener to add question button
+    document.getElementById('add-question').addEventListener('click', addQuestion);
+    
+    // Add first question on page load
+    addQuestion();
+    
+    // Add event listener for option inputs
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('option-input')) {
+            updateChoicePreview(e.target);
+        }
+    });
 });
 </script>
 </body>
